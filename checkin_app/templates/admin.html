@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel Administrador</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .tablas-contenedor {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .tabla-trabajador {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 15px;
+            min-width: 280px;
+            flex: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: white;
+            padding: 8px;
+        }
+
+        td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        form input, form button {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        form button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        form button:hover {
+            background-color: #0056b3;
+        }
+
+        hr {
+            margin: 40px 0;
+        }
+
+        .usuarios ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .usuarios li {
+            margin-bottom: 5px;
+        }
+
+        .tarde {
+            color: red;
+            font-weight: bold;
+        }
+
+        .margen {
+            color: #d8a600;
+            font-weight: bold;
+        }
+
+        .temprano {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Bienvenido, {{ current_user.nombre }}</h1>
+        <a href="/logout">Cerrar sesión</a>
+    </div>
+
+    <h2>Registros por trabajador</h2>
+
+    <div class="tablas-contenedor">
+        {% for nombre, registros in registros_por_usuario.items() %}
+        <div class="tabla-trabajador">
+            <h3>{{ nombre }}</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Fecha y hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in registros %}
+                    {% set hora_limite = r.hora.replace(hour=9, minute=0, second=0, microsecond=0) %}
+                    {% set margen_limite = r.hora.replace(hour=9, minute=20, second=0, microsecond=0) %}
+
+                    {% if r.hora < hora_limite %}
+                        {% set clase = 'temprano' %}
+                        {% set etiqueta = ' — Temprano' %}
+                    {% elif r.hora <= margen_limite %}
+                        {% set clase = 'margen' %}
+                        {% set etiqueta = ' — Margen' %}
+                    {% else %}
+                        {% set clase = 'tarde' %}
+                        {% set etiqueta = ' — Tarde' %}
+                    {% endif %}
+
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="{{ clase }}">
+                            {{ r.hora.strftime('%d-%m-%Y %H:%M:%S') }}{{ etiqueta }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+
+    <hr>
+
+    <h3>Registrar nuevo trabajador</h3>
+    <form action="/crear_usuario" method="POST">
+        <input type="text" name="nombre" placeholder="Nombre completo" required>
+        <input type="text" name="usuario" placeholder="Usuario" required>
+        <input type="password" name="password" placeholder="Contraseña" required>
+        <button type="submit">Crear trabajador</button>
+    </form>
+
+    <h3>Usuarios registrados</h3>
+    <div class="usuarios">
+        <ul>
+            {% for usuario in usuarios %}
+                <li>
+                    {{ usuario.nombre }} ({{ usuario.rol }})
+                    {% if usuario.rol != 'admin' and usuario.id != current_user.id %}
+                        — <a href="/eliminar_usuario/{{ usuario.id }}">Eliminar</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

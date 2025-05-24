@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+        }
+
+        .login-box {
+            background-color: white;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            width: 320px;
+            text-align: center;
+        }
+
+        .login-box h1 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .login-box button:hover {
+            background-color: #0056b3;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+        }
+
+        .contenedor-central {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .espaciador-arriba {
+            flex: 0.5;
+        }
+
+        .espaciador-entre {
+            flex: 0.7;
+        }
+
+        .espaciador-abajo {
+            flex: 1;
+        }
+
+        .logo-merial {
+            width: 600px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor-central">
+        <div class="espaciador-arriba"></div>
+
+        <img src="{{ url_for('static', filename='Merial3.png') }}" alt="Logo Merial" class="logo-merial">
+
+        <div class="espaciador-entre"></div>
+
+        <div class="login-box">
+            <h1>Iniciar Sesión</h1>
+            <form action="/login" method="POST">
+                <input type="text" name="usuario" placeholder="Usuario" required>
+                <input type="password" name="password" placeholder="Contraseña" required>
+                <button type="submit">Ingresar</button>
+            </form>
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+        </div>
+
+        <div class="espaciador-abajo"></div>
+    </div>
+</body>
+</html>

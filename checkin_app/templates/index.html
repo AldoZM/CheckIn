@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check In</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reloj {
+            text-align: center;
+            margin: 30px 0 10px 0;
+        }
+
+        .reloj .hora {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .reloj .fecha {
+            font-size: 18px;
+            color: #666;
+        }
+
+        form button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: block;
+            margin: 0 auto;
+        }
+
+        form button:hover {
+            background-color: #218838;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: white;
+            padding: 8px;
+        }
+
+        td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Hola {{ current_user.nombre }}</h1>
+        <a href="/logout">Cerrar sesión</a>
+    </div>
+
+    <div class="reloj">
+        <div class="hora" id="reloj-hora">--:--:--</div>
+        <div class="fecha" id="reloj-fecha">--/--/----</div>
+    </div>
+
+    <form action="/checkin" method="POST">
+        <button type="submit">Hacer Check In</button>
+    </form>
+
+    <h2>Últimos registros</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Fecha y hora</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for registro in checkins %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ registro.nombre }}</td>
+                <td>{{ registro.hora.strftime('%d-%m-%Y %H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>
+        function actualizarReloj() {
+            const ahora = new Date();
+            const horas = ahora.getHours().toString().padStart(2, '0');
+            const minutos = ahora.getMinutes().toString().padStart(2, '0');
+            const segundos = ahora.getSeconds().toString().padStart(2, '0');
+            const dia = ahora.getDate().toString().padStart(2, '0');
+            const mes = (ahora.getMonth() + 1).toString().padStart(2, '0');
+            const año = ahora.getFullYear();
+
+            document.getElementById('reloj-hora').textContent = `${horas}:${minutos}:${segundos}`;
+            document.getElementById('reloj-fecha').textContent = `${dia}/${mes}/${año}`;
+        }
+
+        setInterval(actualizarReloj, 1000);
+        actualizarReloj();
+    </script>
+</body>
+</html>
+
