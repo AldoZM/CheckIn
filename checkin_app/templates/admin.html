@@ -9,20 +9,17 @@
             margin: 0;
             padding: 20px;
         }
-
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
         }
-
         .tablas-contenedor {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
         }
-
         .tabla-trabajador {
             background-color: white;
             border-radius: 10px;
@@ -31,72 +28,68 @@
             min-width: 280px;
             flex: 1;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
         }
-
         th {
             background-color: #007BFF;
             color: white;
             padding: 8px;
         }
-
         td {
             padding: 8px;
             text-align: center;
             border-bottom: 1px solid #eee;
         }
-
-        form input, form button {
+        input, button {
             padding: 8px;
             margin: 5px 0;
             border-radius: 5px;
             border: 1px solid #ccc;
-            width: 100%;
             box-sizing: border-box;
+            font-size: 14px;
         }
-
-        form button {
+        button {
             background-color: #007BFF;
             color: white;
             border: none;
             cursor: pointer;
-            transition: 0.3s;
+            transition: 0.1s ease;
+            box-shadow: 0 4px #0056b3;
+            position: relative;
+            top: 0;
         }
-
-        form button:hover {
-            background-color: #0056b3;
+        button:active {
+            top: 2px;
+            box-shadow: 0 2px #003d80;
         }
-
+        .btn-rojo {
+            background-color: red;
+            box-shadow: 0 4px darkred;
+        }
+        .btn-rojo:active {
+            box-shadow: 0 2px #800000;
+        }
         hr {
             margin: 40px 0;
         }
-
         .usuarios ul {
             list-style: none;
             padding-left: 0;
         }
-
         .usuarios li {
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
-
-        .tarde {
-            color: red;
-            font-weight: bold;
+        #reasignar-contenedor {
+            margin-top: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
         }
-
-        .margen {
-            color: #d8a600;
-            font-weight: bold;
-        }
-
-        .temprano {
-            color: green;
-            font-weight: bold;
+        #reasignar-contenedor input {
+            background-color: #eee;
         }
     </style>
 </head>
@@ -110,6 +103,7 @@
 
     <div class="tablas-contenedor">
         {% for nombre, registros in registros_por_usuario.items() %}
+        {% if nombre != current_user.nombre %}
         <div class="tabla-trabajador">
             <h3>{{ nombre }}</h3>
             <table>
@@ -145,16 +139,19 @@
                 </tbody>
             </table>
         </div>
+        {% endif %}
         {% endfor %}
     </div>
 
     <hr>
 
     <h3>Registrar nuevo trabajador</h3>
-    <form action="/crear_usuario" method="POST">
+    <form id="form-trabajador" method="POST" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
         <input type="text" name="nombre" placeholder="Nombre completo" required>
         <input type="text" name="usuario" placeholder="Usuario" required>
         <input type="password" name="password" placeholder="Contraseña" required>
+        <input type="text" id="uid" name="uid" placeholder="Tag del trabajador" readonly required>
+        <button type="button" onclick="leerTag()">Esperar Tag</button>
         <button type="submit">Crear trabajador</button>
     </form>
 
@@ -162,14 +159,108 @@
     <div class="usuarios">
         <ul>
             {% for usuario in usuarios %}
-                <li>
-                    {{ usuario.nombre }} ({{ usuario.rol }})
-                    {% if usuario.rol != 'admin' and usuario.id != current_user.id %}
-                        — <a href="/eliminar_usuario/{{ usuario.id }}">Eliminar</a>
-                    {% endif %}
-                </li>
+            <li id="usuario-{{ usuario.id }}">
+                <strong>{{ usuario.nombre }}</strong> ({{ usuario.rol }})
+                {% if usuario.rfid_uid %}
+                    — Tag asignado: <span id="tag-actual-{{ usuario.id }}">{{ usuario.rfid_uid }}</span>
+                {% endif %}
+                {% if usuario.rol != 'admin' and usuario.id != current_user.id %}
+                    <button class="btn-rojo" onclick="eliminarUsuario({{ usuario.id }})">Eliminar</button>
+                    <button onclick="reasignarTag({{ usuario.id }})">Reasignar Tag</button>
+                {% endif %}
+            </li>
             {% endfor %}
         </ul>
+
+        <div id="reasignar-contenedor">
+            <input type="text" id="nuevo-uid" readonly placeholder="Esperando nuevo tag..." style="width: 200px;">
+            <button onclick="cancelarReasignar()">Cancelar</button>
+        </div>
     </div>
+
+<script>
+function leerTag() {
+    const input = document.getElementById("uid");
+    input.value = "Leyendo...";
+    fetch('/leer_uid')
+        .then(res => res.text())
+        .then(uid => {
+            input.value = uid;
+        })
+        .catch(err => {
+            input.value = "";
+            alert("❌ Error al leer el tag.");
+            console.error(err);
+        });
+}
+
+function eliminarUsuario(id) {
+    if (confirm("¿Estás seguro de que deseas eliminar este usuario?")) {
+        window.location.href = "/eliminar_usuario/" + id;
+    }
+}
+
+function cancelarReasignar() {
+    document.getElementById("reasignar-contenedor").style.display = "none";
+    document.getElementById("nuevo-uid").value = "";
+}
+
+function reasignarTag(id) {
+    trabajadorSeleccionado = id;
+    document.getElementById("reasignar-contenedor").style.display = "flex";
+    document.getElementById("nuevo-uid").value = "Esperando nuevo tag...";
+
+    fetch('/leer_uid')
+        .then(res => res.text())
+        .then(uid => {
+            fetch('/asignar_uid/' + trabajadorSeleccionado, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'uid=' + encodeURIComponent(uid)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(msg => {
+                        alert(msg);
+                        cancelarReasignar();
+                    });
+                }
+                return response.text().then(() => {
+                    document.getElementById('tag-actual-' + trabajadorSeleccionado).innerText = uid;
+                    alert("✅ Tag reasignado correctamente: " + uid);
+                    cancelarReasignar();
+                });
+            });
+        })
+        .catch(err => {
+            alert("❌ Error al leer el nuevo tag.");
+            console.error(err);
+            cancelarReasignar();
+        });
+}
+
+document.getElementById("form-trabajador").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const data = new FormData(form);
+
+    fetch('/crear_usuario', {
+        method: 'POST',
+        body: new URLSearchParams(data)
+    })
+    .then(res => {
+        if (!res.ok) return res.text().then(msg => { throw new Error(msg); });
+        return res.text();
+    })
+    .then(msg => {
+        alert(msg);
+        location.reload();
+    })
+    .catch(err => {
+        alert(err.message);
+    });
+});
+</script>
 </body>
 </html>
